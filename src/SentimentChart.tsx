@@ -107,13 +107,9 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const candleBrushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
   const isBrushing = useRef(false);
 
-  // ── Date bounds (past year) ──────────────────────────────────────────────
-  const today = useMemo(() => new Date(), []);
-  const yearAgo = useMemo(() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 1);
-    return d;
-  }, []);
+  // ── Date bounds ──────────────────────────────────────────────────────────
+  const today = useMemo(() => new Date("2026-02-28"), []);
+  const yearAgo = useMemo(() => new Date("2025-02-28"), []);
 
   // ── X scale ──────────────────────────────────────────────────────────────
   const xScale = useMemo(
@@ -755,7 +751,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const fmt = (d: Date) => d3.timeFormat("%b %d, %Y")(d);
 
   return (
-    <>
+    <div style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}>
     {/* Insider Sentiment section hidden */}
     <div className="hidden rounded-xl border border-border bg-surface shadow-sm p-4 mt-6">
       {/* Header */}
@@ -890,7 +886,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
               <span className="text-white font-semibold">{topHover.ratio.toFixed(1)}%</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-slate-400">Total n:</span>
+              <span className="text-slate-400">Total:</span>
               <span className="text-white">{topHover.total}</span>
             </div>
           </div>
@@ -1030,7 +1026,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
               <span className="text-white font-semibold">{(botHover.ratio * 100).toFixed(1)}%</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-slate-400">Total n:</span>
+              <span className="text-slate-400">Total:</span>
               <span className="text-white">{botHover.total}</span>
             </div>
           </div>
@@ -1071,7 +1067,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           <span className="animate-spin text-2xl text-slate-400">&#9696;</span>
         </div>
       ) : (
-        <svg viewBox={`0 0 ${W} ${CAND_H}`} className="w-full">
+        <svg viewBox={`0 0 ${W} ${CAND_H}`} className="w-full" style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}>
           <g transform={`translate(${CM.left},${CM.top})`}>
             {/* Horizontal grid */}
             {yCandleTicks.map((t) => (
@@ -1111,10 +1107,16 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
               <g key={tick.toString()} transform={`translate(${xCandleScale(tick)},${CIH})`}>
                 <line y2={4} stroke="#334155" />
                 <text y={17} textAnchor="middle" fill="#94a3b8" fontSize={11}>
-                  {d3.timeFormat("%b")(tick)}
+                  {d3.timeFormat("%b '%y")(tick)}
                 </text>
               </g>
             ))}
+            <text
+              x={CIW / 2} y={CIH + 32}
+              textAnchor="middle" fill="#64748b" fontSize={11} letterSpacing="0.04em"
+            >
+              DATE
+            </text>
 
             {/* Y axis */}
             <line x1={0} x2={0} y1={0} y2={CIH} stroke="#334155" />
@@ -1126,6 +1128,13 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
                 </text>
               </g>
             ))}
+            <text
+              transform="rotate(-90)"
+              x={-CIH / 2} y={-100}
+              textAnchor="middle" fill="#64748b" fontSize={11} letterSpacing="0.04em"
+            >
+              PRICE (USD)
+            </text>
 
             {/* Active range lines (from heat brush) */}
             {activeRange && !candleBrush && (
@@ -1150,16 +1159,9 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       )}
 
       {/* Divider */}
-      <div className="border-t border-border my-3" />
+      <div className="border-t border-border my-1" />
 
-      {/* Rolling strip sub-header */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-slate-400">
-          Rolling Sector Sentiment · 14-day trailing buy ratio · ±2σ color scale
-        </span>
-      </div>
-
-      <svg viewBox={`0 0 ${W} ${ROLL_H}`} className="w-full">
+<svg viewBox={`0 0 ${W} ${ROLL_H}`} className="w-full" style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}>
         <g transform={`translate(${RM.left},${RM.top})`}>
           {/* Continuous day strips per sector */}
           {SECTOR_ORDER.map((sector, si) => {
@@ -1269,10 +1271,23 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             <g key={tick.toString()} transform={`translate(${xRollScale(tick)},${RIH})`}>
               <line y2={4} stroke="#334155" />
               <text y={17} textAnchor="middle" fill="#94a3b8" fontSize={11}>
-                {d3.timeFormat("%b")(tick)}
+                {d3.timeFormat("%b '%y")(tick)}
               </text>
             </g>
           ))}
+          <text
+            x={RIW / 2} y={RIH + 32}
+            textAnchor="middle" fill="#64748b" fontSize={11} letterSpacing="0.04em"
+          >
+            DATE
+          </text>
+          <text
+            transform="rotate(-90)"
+            x={-RIH / 2} y={-100}
+            textAnchor="middle" fill="#64748b" fontSize={11} letterSpacing="0.04em"
+          >
+            SECTOR
+          </text>
 
           {/* Heat brush overlay */}
           <g ref={heatBrushGroupRef} />
@@ -1320,12 +1335,12 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             <span className="text-white font-semibold">{(rollHover.ratio * 100).toFixed(1)}%</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-slate-400">Total n:</span>
+            <span className="text-slate-400">Total:</span>
             <span className="text-white">{rollHover.total}</span>
           </div>
         </div>
       )}
     </div>
-    </>
+    </div>
   );
 }
