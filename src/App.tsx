@@ -174,8 +174,9 @@ function App() {
       </section>
 
       <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", margin: "3rem 0 1.5rem" }} />
-      <p style={{ fontSize: "0.78rem", color: "#aaa", margin: 0, fontFamily: "'Roboto', system-ui, sans-serif" }}>
-        CMSC 471 · Interactive Data Visualization · Spring 2026
+      <p style={{ fontSize: "0.78rem", color: "#aaa", margin: 0, fontFamily: "'Roboto', system-ui, sans-serif", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>CMSC 471 · Interactive Data Visualization · Spring 2026</span>
+        <a href="https://github.com/gselez6761/insider-sentiment" target="_blank" rel="noreferrer" style={{ color: "#aaa", textDecoration: "none" }}>GitHub</a>
       </p>
     </div>
   );
