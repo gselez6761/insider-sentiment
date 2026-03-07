@@ -99,8 +99,14 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   // Candlestick hover tooltip
   const [candleHover, setCandleHover] = useState<{ x: number; y: number } | null>(null);
 
+  // Rolling window size (days)
+  const [rollWindow, setRollWindow] = useState(14);
+
+  // Zoom state
+  const [zoomRange, setZoomRange] = useState<[Date, Date] | null>(null);
+
   // Candlestick + cross-brush state
-  const [activeSector, setActiveSector] = useState<string>("Total*");
+  const [activeSector, setActiveSector] = useState<string>("Weighted Avg.");
   const [candleLoading, setCandleLoading] = useState(true);
   const [heatBrush, setHeatBrush] = useState<[Date, Date] | null>(null);
   const [candleBrush, setCandleBrush] = useState<[Date, Date] | null>(null);
@@ -221,8 +227,10 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       all.push({ start: h2Start, end: h2End, label: `${monthAbbr} 2H` });
       cur = new Date(y, m + 1, 1);
     }
-    return all.filter((hm) => hm.start >= yearAgo && hm.start <= endDate);
-  }, [yearAgo, today]);
+    const lo = zoomRange ? zoomRange[0] : yearAgo;
+    const hi = zoomRange ? zoomRange[1] : endDate;
+    return all.filter((hm) => hm.start >= yearAgo && hm.start <= endDate && hm.end >= lo && hm.start <= hi);
+  }, [yearAgo, today, zoomRange]);
 
   const heatData = useMemo<HeatCell[]>(() => {
     const map = new Map<string, { nBuys: number; nSells: number }>();
@@ -253,7 +261,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     process(buys, "buy");
     process(sells, "sell");
 
-    const realSectors = SECTOR_ORDER.filter((s) => s !== "Total*");
+    const realSectors = SECTOR_ORDER.filter((s) => s !== "Weighted Avg.");
     const cells: HeatCell[] = [];
 
     const sectorRatiosByPeriod: number[][] = [];
@@ -296,7 +304,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       }
       const ratio = weightSum > 0 ? weightedSum / weightSum : 0.5;
       cells.push({
-        sector: "Total*",
+        sector: "Weighted Avg.",
         period: hm.start,
         periodEnd: hm.end,
         periodLabel: hm.label,
@@ -369,7 +377,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       dayCounts.get(k)!.nSells++;
     }
 
-    const realSectors = SECTOR_ORDER.filter((s) => s !== "Total*");
+    const realSectors = SECTOR_ORDER.filter((s) => s !== "Weighted Avg.");
     const cells: RollingDayCell[] = [];
     const sectorRatios: number[][] = [];
     const sectorTotals: number[][] = [];
@@ -390,9 +398,9 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       for (let i = 0; i < daysList.length; i++) {
         sumB += dailyBuys[i];
         sumS += dailySells[i];
-        if (i >= 14) {
-          sumB -= dailyBuys[i - 14];
-          sumS -= dailySells[i - 14];
+        if (i >= rollWindow) {
+          sumB -= dailyBuys[i - rollWindow];
+          sumS -= dailySells[i - rollWindow];
         }
         const total = sumB + sumS;
         const ratio = total > 0 ? sumB / total : 0.5;
@@ -423,7 +431,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       }
       const ratio = weightSum > 0 ? weightedSum / weightSum : 0.5;
       cells.push({
-        sector: "Total*",
+        sector: "Weighted Avg.",
         date: daysList[i],
         nBuys: Math.round(ratio * totalN),
         nSells: Math.round((1 - ratio) * totalN),
@@ -433,7 +441,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     }
 
     return cells;
-  }, [buys, sells, daysList]);
+  }, [buys, sells, daysList, rollWindow]);
 
   // Per-sector mean +/- 2sigma
   const perSectorStats = useMemo(() => {
@@ -473,8 +481,8 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
 
   // Rolling strip scales
   const xRollScale = useMemo(
-    () => d3.scaleTime().domain([yearAgo, today]).range([0, RIW]),
-    [yearAgo, today]
+    () => d3.scaleTime().domain(zoomRange ?? [yearAgo, today]).range([0, RIW]),
+    [yearAgo, today, zoomRange]
   );
   const yRollScale = useMemo(
     () => d3.scaleBand<string>().domain(SECTOR_ORDER).range([0, RIH]).padding(0.08),
@@ -511,23 +519,27 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
 
   // ── Candlestick scales ─────────────────────────────────────────────────
   const xCandleScale = useMemo(
-    () => d3.scaleTime().domain([yearAgo, today]).range([0, CIW]),
-    [yearAgo, today]
+    () => d3.scaleTime().domain(zoomRange ?? [yearAgo, today]).range([0, CIW]),
+    [yearAgo, today, zoomRange]
   );
   const candleParsed = useMemo(
     () => candleData.map((c) => ({ ...c, d: new Date(c.date) })),
     [candleData]
   );
+  const candleParsedVisible = useMemo(
+    () => zoomRange ? candleParsed.filter((c) => c.d >= zoomRange[0] && c.d <= zoomRange[1]) : candleParsed,
+    [candleParsed, zoomRange]
+  );
   const yCandleScale = useMemo(() => {
-    if (candleParsed.length === 0) return d3.scaleLinear().domain([0, 100]).range([CIH, 0]);
-    const lo = d3.min(candleParsed, (c) => c.low) ?? 0;
-    const hi = d3.max(candleParsed, (c) => c.high) ?? 100;
+    if (candleParsedVisible.length === 0) return d3.scaleLinear().domain([0, 100]).range([CIH, 0]);
+    const lo = d3.min(candleParsedVisible, (c) => c.low) ?? 0;
+    const hi = d3.max(candleParsedVisible, (c) => c.high) ?? 100;
     const pad = (hi - lo) * 0.05;
     return d3.scaleLinear().domain([lo - pad, hi + pad]).nice().range([CIH, 0]);
-  }, [candleParsed]);
+  }, [candleParsedVisible]);
   const candleWidth = useMemo(
-    () => Math.max(1, CIW / Math.max(1, candleParsed.length) - 1),
-    [candleParsed]
+    () => Math.max(1, CIW / Math.max(1, candleParsedVisible.length) - 1),
+    [candleParsedVisible]
   );
   const xCandleMonthTicks = useMemo(() => xCandleScale.ticks(d3.timeMonth.every(1)!), [xCandleScale]);
   const yCandleTicks = useMemo(() => yCandleScale.ticks(6), [yCandleScale]);
@@ -655,19 +667,21 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     const brush = d3
       .brushX()
       .extent([[0, 0], [CIW, CIH]])
-      .on("brush end", (event: d3.D3BrushEvent<unknown>) => {
-        if (!event.selection) {
-          setCandleBrush(null);
-          return;
-        }
+      .on("brush", (event: d3.D3BrushEvent<unknown>) => {
+        if (!event.selection) return;
+        // no-op during drag — just show selection visually
+      })
+      .on("end", (event: d3.D3BrushEvent<unknown>) => {
+        if (!event.selection) return;
         const [x0, x1] = event.selection as [number, number];
-        setCandleBrush([xCandleScale.invert(x0), xCandleScale.invert(x1)]);
-        try {
-          if (heatBrushGroupRef.current && heatBrushRef.current) {
-            d3.select(heatBrushGroupRef.current).call(heatBrushRef.current.move as never, null);
-          }
-        } catch {}
+        const d0 = xCandleScale.invert(x0);
+        const d1 = xCandleScale.invert(x1);
+        setZoomRange([d0, d1]);
+        setCandleBrush(null);
         setHeatBrush(null);
+        // clear brush selection from DOM
+        const g = d3.select(candleBrushGroupRef.current!);
+        g.call(brush.move as never, null);
       });
 
     candleBrushRef.current = brush;
@@ -686,6 +700,10 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const activeRange = heatBrush ?? candleBrush ?? null;
 
   // ── Clear all selections ─────────────────────────────────────────────
+  const resetZoom = useCallback(() => {
+    setZoomRange(null);
+  }, []);
+
   const clearSelection = useCallback(() => {
     setHeatBrush(null);
     setCandleBrush(null);
@@ -708,10 +726,11 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") clearSelection();
+      if (e.key === "z" || e.key === "Z") resetZoom();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [clearSelection]);
+  }, [clearSelection, resetZoom]);
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (loading) {
@@ -1027,20 +1046,31 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             1Y daily candlestick · drag on heat strip to switch ETF
           </span>
         </div>
-        {activeRange && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">
-              {d3.timeFormat("%b %d, %Y")(activeRange[0])} – {d3.timeFormat("%b %d, %Y")(activeRange[1])}
-            </span>
+        <div className="flex items-center gap-3">
+          {activeRange && (
+            <>
+              <span className="text-xs text-slate-400">
+                {d3.timeFormat("%b %d, %Y")(activeRange[0])} – {d3.timeFormat("%b %d, %Y")(activeRange[1])}
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-xs text-slate-400 hover:text-white border border-border rounded px-2.5 py-1 transition-colors flex items-center gap-1.5"
+              >
+                Clear Selection
+                <kbd className="text-[10px] bg-white/10 rounded px-1 py-0.5 font-mono">ESC</kbd>
+              </button>
+            </>
+          )}
+          {zoomRange && (
             <button
-              onClick={clearSelection}
-              className="text-xs text-slate-400 hover:text-white border border-border rounded px-2.5 py-1 transition-colors flex items-center gap-1.5"
+              onClick={resetZoom}
+              className="text-xs text-emerald-400 hover:text-white border border-emerald-800 rounded px-2.5 py-1 transition-colors flex items-center gap-1.5"
             >
-              Clear Selection
-              <kbd className="text-[10px] bg-white/10 rounded px-1 py-0.5 font-mono">ESC</kbd>
+              Reset Zoom
+              <kbd className="text-[10px] bg-white/10 rounded px-1 py-0.5 font-mono">Z</kbd>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Candlestick Chart ──────────────────────────────────────── */}
@@ -1049,7 +1079,19 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           <span className="animate-spin text-2xl text-slate-400">&#9696;</span>
         </div>
       ) : (
-        <svg viewBox={`0 0 ${W} ${CAND_H}`} className="w-full" style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}>
+        <svg
+          viewBox={`0 0 ${W} ${CAND_H}`}
+          className="w-full"
+          style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * W - CM.left;
+            const y = ((e.clientY - rect.top) / rect.height) * CAND_H - CM.top;
+            if (x < 0 || x > CIW || y < 0 || y > CIH) { setCandleHover(null); return; }
+            setCandleHover({ x, y });
+          }}
+          onMouseLeave={() => setCandleHover(null)}
+        >
           <g transform={`translate(${CM.left},${CM.top})`}>
             {/* Horizontal grid */}
             {yCandleTicks.map((t) => (
@@ -1057,7 +1099,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             ))}
 
             {/* Candles */}
-            {candleParsed.map((c, i) => {
+            {candleParsedVisible.map((c, i) => {
               const cx = xCandleScale(c.d);
               const isUp = c.close >= c.open;
               const bodyTop = yCandleScale(Math.max(c.open, c.close));
@@ -1159,22 +1201,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
               );
             })()}
 
-            {/* Mouse tracking overlay */}
-            <rect
-              x={0} y={0} width={CIW} height={CIH}
-              fill="transparent"
-              style={{ cursor: "crosshair" }}
-              onMouseMove={(e) => {
-                const svg = (e.currentTarget as SVGRectElement).closest("svg")!;
-                const rect = svg.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * W - CM.left;
-                const y = ((e.clientY - rect.top) / rect.height) * CAND_H - CM.top;
-                setCandleHover({ x, y });
-              }}
-              onMouseLeave={() => setCandleHover(null)}
-            />
-
-            {/* Brush overlay */}
+            {/* Brush overlay (also handles crosshair mousemove via D3) */}
             <g ref={candleBrushGroupRef} />
           </g>
         </svg>
@@ -1317,7 +1344,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       </svg>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-3 text-md font-medium text-slate-300">
+      <div className="flex items-center justify-center gap-4 mt-3 text-sm font-normal text-slate-400">
         <span>Ratio of Insider Buying to Selling</span>
         <div className="flex items-center gap-2">
           <span>Low</span>
@@ -1329,7 +1356,31 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           />
           <span>High</span>
         </div>
-        <span>· 14-day rolling window · opacity = transaction volume</span>
+        <span>· opacity = transaction volume</span>
+        <label className="flex items-center gap-2 ml-4 text-slate-400" style={{ fontSize: "10px" }}>
+          <span>Window:</span>
+          <input
+            type="range" min={1} max={30} value={rollWindow}
+            onChange={(e) => setRollWindow(Number(e.target.value))}
+            style={{ width: "125px", accentColor: "#22c55e", cursor: "pointer" }}
+          />
+          <input
+            type="number" min={1} max={30} value={rollWindow}
+            onChange={(e) => {
+              const v = Math.max(1, Math.min(30, Number(e.target.value)));
+              if (!isNaN(v)) setRollWindow(v);
+            }}
+            style={{
+              width: "18px", background: "transparent", border: "none",
+              borderBottom: "1px solid #475569", color: "#94a3b8",
+              fontSize: "10px", textAlign: "center", outline: "none", cursor: "text",
+              MozAppearance: "textfield",
+            }}
+            onFocus={(e) => e.currentTarget.select()}
+            onWheel={(e) => e.currentTarget.blur()}
+          />
+          <span style={{ color: "#94a3b8", fontSize: "10px" }}>days</span>
+        </label>
       </div>
 
       {/* Rolling tooltip */}
@@ -1342,7 +1393,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             {rollHover.sector} · {d3.timeFormat("%b %d, %Y")(rollHover.date)}
           </div>
           <div className="text-slate-400 mb-1" style={{ fontSize: 10 }}>
-            Trailing 14 days
+            Trailing {rollWindow} days
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-emerald-400">Buys:</span>

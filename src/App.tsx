@@ -147,7 +147,37 @@ function App() {
           conviction and a meaningful sample size. Price data uses conventional candlestick encoding for direct comparison with sentiment.
         </p>
         <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
-          <strong>Alternatives considered.</strong> An early design used a half-monthly aggregated heatmap binned into ~24 periods per year.
+          <strong>Alternatives considered.</strong> An early design used a{" "}
+          <span style={{ position: "relative", display: "inline-block" }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget.querySelector<HTMLDivElement>(".design-preview")!;
+              el.style.display = "block";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget.querySelector<HTMLDivElement>(".design-preview")!;
+              el.style.display = "none";
+            }}
+          >
+            <span style={{ borderBottom: "2px dotted #888", cursor: "default", color: "#111", fontWeight: 500 }}>
+              half-monthly aggregated heatmap
+            </span>
+            <div className="design-preview" style={{
+              display: "none",
+              position: "absolute",
+              bottom: "calc(100% + 8px)",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 50,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+              borderRadius: "6px",
+              overflow: "hidden",
+              border: "1px solid #e5e5e5",
+              width: "480px",
+            }}>
+              <img src={`${import.meta.env.BASE_URL}initial_design.jpg`} alt="Initial heatmap design" style={{ width: "100%", display: "block" }} />
+            </div>
+          </span>{" "}
+          binned into ~24 periods per year.
           While easier to scan, the coarse resolution obscured short-lived spikes that often precede earnings announcements.
           The continuous 14-day rolling strip preserves temporal resolution while smoothing daily noise.
           A stacked bar chart was considered for sector comparison but rejected because it is harder to track a single sector across time.

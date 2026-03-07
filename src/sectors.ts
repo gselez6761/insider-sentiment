@@ -564,7 +564,7 @@ export const SECTOR_ORDER = [
   "Real Estate",
   "Utilities",
   "Materials",
-  "Total*",
+  "Weighted Avg.",
 ];
 
 // S&P 500 sector weightings (%) for weighted-average composite
@@ -595,7 +595,7 @@ export const SECTOR_ETF: Record<string, string> = {
   "Real Estate": "XLRE",
   "Utilities": "XLU",
   "Materials": "XLB",
-  "Total*": "SPY",
+  "Weighted Avg.": "SPY",
 };
 
 export function getSector(ticker: string): string {
