@@ -115,6 +115,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const candleBrushGroupRef = useRef<SVGGElement>(null);
   const candleBrushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
   const isBrushing = useRef(false);
+  const isCandleBrushing = useRef(false);
 
   // ── Date bounds ──────────────────────────────────────────────────────────
   const today = useMemo(() => new Date("2026-02-28"), []);
@@ -667,11 +668,12 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     const brush = d3
       .brushX()
       .extent([[0, 0], [CIW, CIH]])
+      .on("start", () => { isCandleBrushing.current = true; setCandleHover(null); })
       .on("brush", (event: d3.D3BrushEvent<unknown>) => {
         if (!event.selection) return;
-        // no-op during drag — just show selection visually
       })
       .on("end", (event: d3.D3BrushEvent<unknown>) => {
+        isCandleBrushing.current = false;
         if (!event.selection) return;
         const [x0, x1] = event.selection as [number, number];
         const d0 = xCandleScale.invert(x0);
@@ -1036,7 +1038,8 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     </div>
 
     {/* ── ETF Candlestick + Rolling Sector Heat Strip ────────────────── */}
-    <div className="rounded-xl border border-border bg-surface shadow-sm p-4">
+    <div style={{ overflowX: "auto" }}>
+    <div className="rounded-xl border border-border bg-surface shadow-sm p-4" style={{ minWidth: "680px" }}>
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-base font-semibold text-white">
@@ -1084,6 +1087,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           className="w-full"
           style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}
           onMouseMove={(e) => {
+            if (isCandleBrushing.current) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * W - CM.left;
             const y = ((e.clientY - rect.top) / rect.height) * CAND_H - CM.top;
@@ -1413,6 +1417,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           </div>
         </div>
       )}
+    </div>
     </div>
     </div>
   );

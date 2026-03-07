@@ -40,7 +40,7 @@ function App() {
           CMSC 471 · Interactive Data Visualization · Assignment 1 · Spring 2026
 </p>
         <h1 style={{ fontSize: "1.8rem", fontWeight: "normal", margin: "0 0 0.5rem", lineHeight: 1.3, color: "#111" }}>
-          Insider Sentiment Dashboard
+          Insider Sentiment Visualized
         </h1>
         <p style={{ margin: 0, color: "#555", fontSize: "0.95rem" }}>
           Corporate insider buy/sell activity across S&P 500 sectors — Feb 28 2025 – Feb 28 2026, SEC Form 4 filings
