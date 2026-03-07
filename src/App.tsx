@@ -38,12 +38,12 @@ function App() {
       <div style={{ marginBottom: "2.5rem", borderBottom: "1px solid #e5e5e5", paddingBottom: "1.5rem" }}>
         <p style={{ fontSize: "0.78rem", color: "#888", margin: "0 0 0.5rem", fontFamily: "monospace", letterSpacing: "0.05em", textTransform: "uppercase" }}>
           CMSC 471 · Interactive Data Visualization · Assignment 1 · Spring 2026
-        </p>
+</p>
         <h1 style={{ fontSize: "1.8rem", fontWeight: "normal", margin: "0 0 0.5rem", lineHeight: 1.3, color: "#111" }}>
           Insider Sentiment Dashboard
         </h1>
         <p style={{ margin: 0, color: "#555", fontSize: "0.95rem" }}>
-          Corporate insider buy/sell activity across S&P 500 sectors — five-year window, SEC Form 4 filings
+          Corporate insider buy/sell activity across S&P 500 sectors — Feb 28 2025 – Feb 28 2026, SEC Form 4 filings
         </p>
       </div>
 
@@ -53,10 +53,9 @@ function App() {
           1&nbsp;&nbsp;Dataset &amp; Background
         </h2>
         <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
-          This visualization draws on five years of U.S. corporate insider trading disclosures from SEC Form 4 filings (2020–2025).
+          This visualization draws on one year of U.S. corporate insider trading disclosures from SEC Form 4 filings (Feb 28 2025 – Feb 28 2026).
           Form 4 must be filed within two business days whenever a director, officer, or 10%-or-greater shareholder buys or sells
-          shares of their own company. Because insiders have privileged knowledge of their firm's prospects, the aggregate direction
-          of their trades is widely used as a leading sentiment indicator.
+          shares of their own company.
         </p>
         <p style={{ margin: 0, fontSize: "0.92rem" }}>
           Each record captures a <em>ticker</em>, <em>transaction date</em>, and <em>dollar amount</em>, classified as either a buy or
@@ -75,6 +74,61 @@ function App() {
       }}>
         <SentimentChart buys={buys} sells={sells} loading={loading} />
       </div>
+
+      {/* Key Findings */}
+      <section style={{ marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: "bold", margin: "0 0 0.6rem", color: "#111", fontFamily: "'Roboto', system-ui, sans-serif" }}>
+          Key Findings
+        </h2>
+        <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
+          Three recurring troughs in insider buy activity are visible across nearly all sectors: one spanning roughly
+          <strong> January 1 – March 1</strong>, another from <strong>June 1 – August 1</strong>, and a third from <strong>September 1 – November 1</strong>. These
+          depressions are consistent with corporate <em>insider trading blackout periods</em> — windows during which
+          companies prohibit officers and directors from transacting in company stock to prevent trading on material
+          non-public information ahead of earnings.
+        </p>
+        <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
+          The January–March trough precedes Q4 earnings season (results typically reported mid-January through
+          late February), the June–August trough precedes Q2 earnings (mid-July through mid-August), and the
+          September–November trough precedes Q3 earnings (mid-October through mid-November). Most large-cap
+          companies enforce blackout windows of 30–60 days before each quarterly release, which maps closely onto
+          the observed activity gaps.
+        </p>
+        <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
+          A second pattern aligns with the contrarian buying behavior documented by Jeng (2003): insiders purchase
+          into sector-level price pressure, positioning ahead of recoveries the broader market has not yet priced in.
+        </p>
+        <p style={{ margin: "0 0 0.4rem", fontSize: "0.92rem" }}><strong>Notable examples:</strong></p>
+        <ul style={{ margin: "0 0 0.75rem", paddingLeft: "1.5rem", fontSize: "0.92rem" }}>
+          <li style={{ marginBottom: "0.5rem" }}>
+            <strong>Energy · Apr 15 – Apr 30, 2025.</strong> The "Liberation Day" tariff shock (April 2) erased
+            $6.6 trillion in market value over two days and drove WTI crude to a four-year low of $54/bbl on
+            recession fears and a Saudi-led OPEC+ supply pivot. Energy insiders bought aggressively into the
+            trough, recognizing that oil and gas imports were explicitly exempt from the tariffs and that WTI
+            below $60/bbl was under Permian Basin replacement cost — a structural floor the market was ignoring.
+          </li>
+          <li style={{ marginBottom: "0.5rem" }}>
+            <strong>Health Care, Communication Services, Consumer Staples &amp; Real Estate · Aug 5 – Aug 25, 2025.</strong> Conflicting
+            PMI signals — S&amp;P Global at 53.0 (expansion) versus ISM at 48.7 (sixth consecutive contraction month)
+            — created broad uncertainty about whether the economy was recovering or deteriorating. Insiders in Health
+            Care likely saw the market's hesitation as an opportunity, buying into a sector receiving major domestic
+            capital commitments (Johnson &amp; Johnson $2B, Genentech $700M) that the broader market had not yet
+            priced in. Communication Services insiders likely acted on the recognition that Alphabet, Meta, and Netflix
+            were generating 21% average EPS growth and maturing into cash-generative businesses — trading at valuations
+            that didn't yet reflect their earnings power.
+          </li>
+          <li style={{ marginBottom: "0" }}>
+            <strong>Consumer Staples &amp; Industrials · Nov 2 – Dec 7, 2025.</strong> Consumer Staples had lagged
+            the broader market sharply (3.9% YTD) under sustained tariff-driven input cost pressure. With Q3 blackout
+            windows lifting and S&amp;P 500 EPS growth coming in at 14% — the fourth consecutive quarter of
+            double-digit expansion — insiders in Consumer Staples — consistent with the well-documented pattern that insiders tend to buy
+            after prices fall — likely viewed the sector's underperformance as overdone relative to the broader
+            earnings environment and bought into the disconnect. Industrials insiders,
+            coming off 18.3% YTD returns fueled by domestic reshoring, likely used the post-blackout window to add
+            exposure ahead of what they anticipated would be continued manufacturing momentum.
+          </li>
+        </ul>
+      </section>
 
       {/* Section 2 */}
       <section style={{ marginBottom: "2rem" }}>
@@ -143,6 +197,8 @@ function App() {
           <li style={{ marginBottom: "0.4rem" }}>SPDR Select Sector ETF historical prices (XLK, XLF, XLV, XLE, XLI, XLY, XLP, XLC, XLRE, XLU, XLB, SPY). <em>Yahoo Finance</em>.</li>
           <li style={{ marginBottom: "0.4rem" }}>S&P 500 GICS sector constituent classifications, Q1 2025.</li>
           <li style={{ marginBottom: "0.4rem" }}>Bostock, M. et al. D3.js — Data-Driven Documents. <a href="https://d3js.org" target="_blank" rel="noreferrer" style={{ color: "#1a56db" }}>d3js.org</a>.</li>
+          <li style={{ marginBottom: "0.4rem" }}>U.S. Securities and Exchange Commission. <em>Rule 10b5-1 and Insider Trading Policies and Procedures</em> (Release No. 33-11138, Dec. 14, 2022). <a href="https://www.sec.gov/files/33-11138-fact-sheet.pdf" target="_blank" rel="noreferrer" style={{ color: "#1a56db" }}>sec.gov</a>.</li>
+          <li style={{ marginBottom: "0.4rem" }}>Jeng, L. A. "Estimating the Returns to Insider Trading: A Performance-Evaluation Perspective." <em>The Review of Economics and Statistics</em>, vol. 85, no. 2, May 2003, pp. 453–471.</li>
         </ol>
       </section>
 
@@ -168,8 +224,10 @@ function App() {
         </h2>
         <p style={{ margin: 0, fontSize: "0.92rem" }}>
           Claude Code (Anthropic) was used as a coding assistant throughout — primarily to accelerate D3 boilerplate
-          (axis setup, brush configuration, scale definitions) and to debug React/D3 integration issues. All visualization design decisions, data modeling choices, and analytical
-          framing were made by the author.
+          (axis setup, brush configuration, scale definitions) and to debug React/D3 integration issues. It also supported
+          rapid prototyping and ideation: early design alternatives (stacked bar charts, monthly binning, global vs. per-sector
+          color scales) were sketched and evaluated quickly with AI assistance, compressing the iteration cycle. All visualization
+          design decisions, data modeling choices, and analytical framing were made by the author.
         </p>
       </section>
 

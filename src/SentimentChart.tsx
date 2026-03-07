@@ -96,6 +96,9 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const [rollHover, setRollHover] = useState<RollingDayCell | null>(null);
   const [rollHoverPos, setRollHoverPos] = useState<{ x: number; y: number } | null>(null);
 
+  // Candlestick hover tooltip
+  const [candleHover, setCandleHover] = useState<{ x: number; y: number } | null>(null);
+
   // Candlestick + cross-brush state
   const [activeSector, setActiveSector] = useState<string>("Total*");
   const [candleLoading, setCandleLoading] = useState(true);
@@ -676,28 +679,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       .attr("stroke", "none");
     g.selectAll(".handle").attr("fill", "#64748b");
 
-    g.selectAll(".candle-edge").remove();
-    const edgeLeft = g.append("line").attr("class", "candle-edge")
-      .attr("y1", 0).attr("y2", CIH)
-      .attr("stroke", "#94a3b8").attr("stroke-width", 1)
-      .attr("stroke-dasharray", "4 3").attr("display", "none");
-    const edgeRight = g.append("line").attr("class", "candle-edge")
-      .attr("y1", 0).attr("y2", CIH)
-      .attr("stroke", "#94a3b8").attr("stroke-width", 1)
-      .attr("stroke-dasharray", "4 3").attr("display", "none");
-
-    brush.on("brush.edges end.edges", (event: d3.D3BrushEvent<unknown>) => {
-      if (!event.selection) {
-        edgeLeft.attr("display", "none");
-        edgeRight.attr("display", "none");
-        return;
-      }
-      const [x0, x1] = event.selection as [number, number];
-      edgeLeft.attr("x1", x0).attr("x2", x0).attr("display", null);
-      edgeRight.attr("x1", x1).attr("x2", x1).attr("display", null);
-    });
-
-    return () => { g.on(".brush", null); brush.on("brush.edges end.edges", null); };
+    return () => { g.on(".brush", null); };
   }, [candleParsed.length, xCandleScale]);
 
   // Active highlight range (from either brush)
@@ -1042,7 +1024,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             {activeETF} — {activeSector}
           </h2>
           <span className="text-sm text-slate-400">
-            1Y daily candlestick · drag on heat strip to switch ETF · drag on chart to highlight
+            1Y daily candlestick · drag on heat strip to switch ETF
           </span>
         </div>
         {activeRange && (
@@ -1151,6 +1133,46 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
                 />
               </>
             )}
+
+            {/* Crosshair */}
+            {candleHover && (() => {
+              const price = yCandleScale.invert(candleHover.y);
+              const date = xCandleScale.invert(candleHover.x);
+              const priceLabel = `$${price.toFixed(2)}`;
+              const dateLabel = d3.timeFormat("%b %d, %Y")(date);
+              const labelW = priceLabel.length * 6 + 10;
+              return (
+                <>
+                  <line x1={candleHover.x} x2={candleHover.x} y1={0} y2={CIH} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none" />
+                  <line x1={0} x2={CIW} y1={candleHover.y} y2={candleHover.y} stroke="#64748b" strokeWidth={1} strokeDasharray="3 3" pointerEvents="none" />
+                  {/* Date label on x-axis */}
+                  <rect x={candleHover.x - 30} y={CIH + 4} width={60} height={14} fill="#22c55e" rx={2} pointerEvents="none" />
+                  <text x={candleHover.x} y={CIH + 13} textAnchor="middle" fill="#000" fontSize={9} fontWeight="600" pointerEvents="none">
+                    {dateLabel}
+                  </text>
+                  {/* Price label on y-axis */}
+                  <rect x={-CM.left + 21} y={candleHover.y - 8} width={labelW} height={16} fill="#22c55e" rx={2} pointerEvents="none" />
+                  <text x={-CM.left + 21 + labelW / 2} y={candleHover.y + 1} textAnchor="middle" dominantBaseline="middle" fill="#000" fontSize={10} fontWeight="600" pointerEvents="none">
+                    {priceLabel}
+                  </text>
+                </>
+              );
+            })()}
+
+            {/* Mouse tracking overlay */}
+            <rect
+              x={0} y={0} width={CIW} height={CIH}
+              fill="transparent"
+              style={{ cursor: "crosshair" }}
+              onMouseMove={(e) => {
+                const svg = (e.currentTarget as SVGRectElement).closest("svg")!;
+                const rect = svg.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * W - CM.left;
+                const y = ((e.clientY - rect.top) / rect.height) * CAND_H - CM.top;
+                setCandleHover({ x, y });
+              }}
+              onMouseLeave={() => setCandleHover(null)}
+            />
 
             {/* Brush overlay */}
             <g ref={candleBrushGroupRef} />
