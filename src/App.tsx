@@ -238,9 +238,12 @@ function App() {
           4&nbsp;&nbsp;Development Process
         </h2>
         <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
-          This project was developed individually. Total effort was approximately <strong>12 hours</strong>,
-          split across three phases: data acquisition and cleaning (~4 hrs), visualization design and iteration (~6 hrs),
-          and UI polish and deployment (~2 hrs).
+          This project was developed by a team of three. <strong>Greg</strong> led dataset acquisition and cleaning,
+          the initial visualization concept, and the research write-up and key findings analysis.
+          <strong> Martin</strong> and <strong>Alex</strong> contributed to design iteration and visual refinement,
+          improving layout, color choices, and interaction polish. Total effort was approximately <strong>20 people-hours</strong>,
+          split across three phases: data acquisition and cleaning (~5 hrs), visualization design and iteration (~11 hrs),
+          and UI polish and deployment (~4 hrs).
         </p>
         <p style={{ margin: "0 0 0.75rem", fontSize: "0.92rem" }}>
           The most time-consuming aspect was the linked brush implementation. Several design iterations were also needed before settling on per-sector ±2σ normalization for the color scale.
@@ -255,7 +258,36 @@ function App() {
         <p style={{ margin: 0, fontSize: "0.92rem" }}>
           Claude Code (Anthropic) was used as a coding assistant throughout — primarily to accelerate D3 boilerplate
           (axis setup, brush configuration, scale definitions) and to debug React/D3 integration issues. It also supported
-          rapid prototyping and ideation: early design alternatives (stacked bar charts, monthly binning, global vs. per-sector
+          rapid prototyping and ideation: early design alternatives (stacked bar charts,{" "}
+          <span style={{ position: "relative", display: "inline-block" }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget.querySelector<HTMLDivElement>(".monthly-preview")!;
+              el.style.display = "block";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget.querySelector<HTMLDivElement>(".monthly-preview")!;
+              el.style.display = "none";
+            }}
+          >
+            <span style={{ borderBottom: "2px dotted #888", cursor: "default", color: "#111", fontWeight: 500 }}>
+              monthly binning
+            </span>
+            <div className="monthly-preview" style={{
+              display: "none",
+              position: "absolute",
+              bottom: "calc(100% + 8px)",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 50,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+              borderRadius: "6px",
+              overflow: "hidden",
+              border: "1px solid #e5e5e5",
+              width: "480px",
+            }}>
+              <img src={`${import.meta.env.BASE_URL}initial_design.jpg`} alt="Monthly binning design" style={{ width: "100%", display: "block" }} />
+            </div>
+          </span>,{" "}global vs. per-sector
           color scales) were sketched and evaluated quickly with AI assistance, compressing the iteration cycle. All visualization
           design decisions, data modeling choices, and analytical framing were made by the author.
         </p>

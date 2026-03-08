@@ -1360,8 +1360,8 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
           />
           <span>High</span>
         </div>
-        <span>· opacity = transaction volume</span>
-        <label className="flex items-center gap-2 ml-4 text-slate-400" style={{ fontSize: "10px" }}>
+        <span>Opacity = Transaction volume</span>
+        <label className="flex items-center gap-2 ml-4 text-slate-400 text-sm" >
           <span>Window:</span>
           <input
             type="range" min={1} max={30} value={rollWindow}
@@ -1377,13 +1377,13 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
             style={{
               width: "18px", background: "transparent", border: "none",
               borderBottom: "1px solid #475569", color: "#94a3b8",
-              fontSize: "10px", textAlign: "center", outline: "none", cursor: "text",
+               textAlign: "center", outline: "none", cursor: "text",
               MozAppearance: "textfield",
             }}
             onFocus={(e) => e.currentTarget.select()}
             onWheel={(e) => e.currentTarget.blur()}
           />
-          <span style={{ color: "#94a3b8", fontSize: "10px" }}>days</span>
+          <span style={{ color: "#94a3b8" }}>days</span>
         </label>
       </div>
 
