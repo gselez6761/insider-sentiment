@@ -98,6 +98,9 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
 
   // Candlestick hover tooltip
   const [candleHover, setCandleHover] = useState<{ x: number; y: number } | null>(null);
+  // Candlestick zoom drag (pure React, no D3 brush)
+  const [candleZoomDrag, setCandleZoomDrag] = useState<{ x0: number; x1: number } | null>(null);
+  const candleSvgRef = useRef<SVGSVGElement>(null);
 
   // Rolling window size (days)
   const [rollWindow, setRollWindow] = useState(14);
@@ -112,8 +115,6 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
   const [candleBrush, setCandleBrush] = useState<[Date, Date] | null>(null);
   const heatBrushGroupRef = useRef<SVGGElement>(null);
   const heatBrushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
-  const candleBrushGroupRef = useRef<SVGGElement>(null);
-  const candleBrushRef = useRef<d3.BrushBehavior<unknown> | null>(null);
   const isBrushing = useRef(false);
   const isCandleBrushing = useRef(false);
 
@@ -604,11 +605,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
         }
         const [x0, x1] = event.selection as [number, number];
         setHeatBrush([xRollScale.invert(x0), xRollScale.invert(x1)]);
-        try {
-          if (candleBrushGroupRef.current && candleBrushRef.current) {
-            d3.select(candleBrushGroupRef.current).call(candleBrushRef.current.move as never, null);
-          }
-        } catch {}
+        setCandleZoomDrag(null);
         setCandleBrush(null);
       });
 
@@ -661,42 +658,41 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
     };
   }, [rollingData, xRollScale, yRollScale]);
 
-  // ── Candlestick brush ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (!candleBrushGroupRef.current || candleParsed.length === 0) return;
+  // ── Candlestick zoom drag (pure React) ──────────────────────────────
+  const candlePointerToX = useCallback((e: React.PointerEvent<SVGRectElement>) => {
+    const svg = candleSvgRef.current;
+    if (!svg) return 0;
+    const rect = svg.getBoundingClientRect();
+    return ((e.clientX - rect.left) / rect.width) * W - CM.left;
+  }, []);
 
-    const brush = d3
-      .brushX()
-      .extent([[0, 0], [CIW, CIH]])
-      .on("start", () => { isCandleBrushing.current = true; setCandleHover(null); })
-      .on("brush", (event: d3.D3BrushEvent<unknown>) => {
-        if (!event.selection) return;
-      })
-      .on("end", (event: d3.D3BrushEvent<unknown>) => {
-        isCandleBrushing.current = false;
-        if (!event.selection) return;
-        const [x0, x1] = event.selection as [number, number];
-        const d0 = xCandleScale.invert(x0);
-        const d1 = xCandleScale.invert(x1);
-        setZoomRange([d0, d1]);
-        setCandleBrush(null);
-        setHeatBrush(null);
-        // clear brush selection from DOM
-        const g = d3.select(candleBrushGroupRef.current!);
-        g.call(brush.move as never, null);
-      });
+  const onCandleZoomDown = useCallback((e: React.PointerEvent<SVGRectElement>) => {
+    const x = candlePointerToX(e);
+    if (x < 0 || x > CIW) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setCandleZoomDrag({ x0: x, x1: x });
+    setCandleHover(null);
+    isCandleBrushing.current = true;
+  }, [candlePointerToX]);
 
-    candleBrushRef.current = brush;
-    const g = d3.select(candleBrushGroupRef.current);
-    g.call(brush as d3.BrushBehavior<unknown>);
-    g.select(".selection")
-      .attr("fill", "#ffffff")
-      .attr("fill-opacity", "0.08")
-      .attr("stroke", "none");
-    g.selectAll(".handle").attr("fill", "#64748b");
+  const onCandleZoomMove = useCallback((e: React.PointerEvent<SVGRectElement>) => {
+    if (!candleZoomDrag) return;
+    const x = Math.max(0, Math.min(CIW, candlePointerToX(e)));
+    setCandleZoomDrag(prev => prev ? { ...prev, x1: x } : null);
+  }, [candleZoomDrag, candlePointerToX]);
 
-    return () => { g.on(".brush", null); };
-  }, [candleParsed.length, xCandleScale]);
+  const onCandleZoomUp = useCallback(() => {
+    isCandleBrushing.current = false;
+    if (!candleZoomDrag) return;
+    const lo = Math.min(candleZoomDrag.x0, candleZoomDrag.x1);
+    const hi = Math.max(candleZoomDrag.x0, candleZoomDrag.x1);
+    if (hi - lo > 5) { // minimum 5px drag to trigger zoom
+      setZoomRange([xCandleScale.invert(lo), xCandleScale.invert(hi)]);
+      setCandleBrush(null);
+      setHeatBrush(null);
+    }
+    setCandleZoomDrag(null);
+  }, [candleZoomDrag, xCandleScale]);
 
   // Active highlight range (from either brush)
   const activeRange = heatBrush ?? candleBrush ?? null;
@@ -714,10 +710,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
       if (heatBrushGroupRef.current && heatBrushRef.current)
         d3.select(heatBrushGroupRef.current).call(heatBrushRef.current.move as never, null);
     } catch {}
-    try {
-      if (candleBrushGroupRef.current && candleBrushRef.current)
-        d3.select(candleBrushGroupRef.current).call(candleBrushRef.current.move as never, null);
-    } catch {}
+    setCandleZoomDrag(null);
     try {
       if (brushGroupRef.current && brushRef.current)
         d3.select(brushGroupRef.current).call(brushRef.current.move as never, null);
@@ -1083,6 +1076,7 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
         </div>
       ) : (
         <svg
+          ref={candleSvgRef}
           viewBox={`0 0 ${W} ${CAND_H}`}
           className="w-full"
           style={{ fontFamily: "'Roboto', system-ui, sans-serif" }}
@@ -1205,8 +1199,23 @@ export default function SentimentChart({ buys, sells, loading }: SentimentChartP
               );
             })()}
 
-            {/* Brush overlay (also handles crosshair mousemove via D3) */}
-            <g ref={candleBrushGroupRef} />
+            {/* Zoom drag selection highlight */}
+            {candleZoomDrag && (() => {
+              const lo = Math.min(candleZoomDrag.x0, candleZoomDrag.x1);
+              const hi = Math.max(candleZoomDrag.x0, candleZoomDrag.x1);
+              return <rect x={lo} y={0} width={hi - lo} height={CIH} fill="#ffffff" fillOpacity={0.08} pointerEvents="none" />;
+            })()}
+
+            {/* Transparent zoom drag overlay */}
+            <rect
+              x={0} y={0} width={CIW} height={CIH}
+              fill="transparent"
+              cursor="crosshair"
+              onPointerDown={onCandleZoomDown}
+              onPointerMove={onCandleZoomMove}
+              onPointerUp={onCandleZoomUp}
+              onPointerCancel={onCandleZoomUp}
+            />
           </g>
         </svg>
       )}
