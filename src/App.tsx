@@ -293,6 +293,27 @@ function App() {
         </p>
       </section>
 
+      {/* Extra Credit Features */}
+      <section style={{ marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: "bold", margin: "0 0 0.6rem", color: "#111", fontFamily: "'Roboto', system-ui, sans-serif" }}>
+          6&nbsp;&nbsp;Extra Credit Features
+        </h2>
+        <ul style={{ margin: "0 0 0.75rem", paddingLeft: "1.5rem", fontSize: "0.92rem" }}>
+          <li style={{ marginBottom: "0.75rem" }}>
+            <strong>Adjustable Rolling Window.</strong> A slider and input field allow users to adjust the heat strip's smoothing window from 1 to 30 days. When the window changes, the underlying buy/sell ratios and per-sector color scales recompute in real time, giving users direct control over the visualization's analytical model rather than a fixed parameter.
+          </li>
+          <li style={{ marginBottom: "0.75rem" }}>
+            <strong>Continuous SVG Gradient Heat Strip.</strong> Rather than discrete cells, each sector row uses a continuous SVG linear gradient with one color stop per trading day. This encodes both the buy/sell ratio (hue) and transaction volume (opacity) simultaneously across a smooth time axis, producing richer temporal resolution than a standard discrete heatmap.
+          </li>
+          <li style={{ marginBottom: "0.75rem" }}>
+            <strong>Hover-Triggered Design Prototype Preview.</strong> Hovering over "half-monthly aggregated heatmap" and "monthly binning" reveals inline images of the original prototype designs. This applies the details-on-demand technique to the write-up itself, letting readers see the design evolution without leaving the page.
+          </li>
+          <li style={{ marginBottom: "0" }}>
+            <strong>Grounded Key Findings.</strong> The key findings section synthesizes two recurring patterns visible in the data: insider trading blackout periods and contrarian buying behavior, supported by peer-reviewed literature. Specific activity spikes are anchored to documented macroeconomic events — the tariff shock, conflicting PMI signals, and post-blackout windows — demonstrating that the visualization was used to generate and support substantive insight.
+          </li>
+        </ul>
+      </section>
+
       <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", margin: "3rem 0 1.5rem" }} />
       <p style={{ fontSize: "0.78rem", color: "#aaa", margin: 0, fontFamily: "'Roboto', system-ui, sans-serif", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>CMSC 471 · Interactive Data Visualization · Spring 2026</span>
